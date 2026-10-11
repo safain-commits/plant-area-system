@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+const base=process.env.APP_TEST_URL||'http://127.0.0.1:3000';
+const username=process.env.APP_USERNAME,password=process.env.APP_PASSWORD;
+if(!username||!password)throw Error('Set APP_USERNAME and APP_PASSWORD for the test server. Use a disposable database.');
+const login=await fetch(base+'/api/auth/login',{method:'POST',headers:{'content-type':'application/json',origin:base},body:JSON.stringify({username,password})});assert.equal(login.status,200);const cookie=login.headers.get('set-cookie')?.split(';')[0];assert.ok(cookie);
+const headers={'content-type':'application/json',origin:base,cookie};
+const post=async body=>fetch(base+'/api/data',{method:'POST',headers,body:JSON.stringify(body)});
+const get=async query=>{const response=await fetch(base+'/api/data'+query,{headers:{cookie}});assert.equal(response.status,200);return response.json()};
+assert.equal((await fetch(base+'/api/data?scope=consumables')).status,401);
+for(const path of ['/','/workshop/consumable-room','/equipment-process/bag-filter/561-bf1','/equipment-process/bag-filter/562-bf1','/equipment-process/bag-filter/421-bf1','/equipment-process/bag-filter/422-bf2'])assert.equal((await fetch(base+path,{headers:{cookie}})).status,200);
+const code='SMOKE-'+Date.now();
+assert.equal((await post({action:'material',sapCode:code,name:'Smoke electrode',unit:'batang',packSize:50,area:'Workshop'})).status,200);
+assert.equal((await post({action:'material',sapCode:code,name:'Duplicate',unit:'batang',packSize:50,area:'Workshop'})).status,409);
+let data=await get('?scope=consumables');let material=data.materials.find(m=>m.sap_code===code);assert.equal(material.stock,0);
+assert.equal((await post({action:'receive',materialId:material.id,packs:2,reference:'SMOKE-GR',area:'Workshop'})).status,200);
+assert.equal((await post({action:'issue',materialId:material.id,quantity:30,job:'Smoke welding',wo:'WO-SMOKE',area:'Workshop'})).status,200);
+assert.equal((await get('?scope=consumables')).materials.find(m=>m.id===material.id).stock,70);
+assert.equal((await post({action:'issue',materialId:material.id,quantity:71,job:'Too much',area:'Workshop'})).status,409);
+assert.equal((await post({action:'receive',materialId:material.id,packs:1,reference:'Wrong area',area:'Utilities'})).status,400);
+const simultaneous=await Promise.all([post({action:'issue',materialId:material.id,quantity:50,job:'A',area:'Workshop'}),post({action:'issue',materialId:material.id,quantity:50,job:'B',area:'Workshop'})]);assert.deepEqual(simultaneous.map(r=>r.status).sort(),[200,409]);
+data=await get('?scope=consumables');assert.equal(data.materials.find(m=>m.id===material.id).stock,20);assert.equal(data.moves.filter(m=>m.material_id===material.id).length,3);
+for(const equipmentCode of ['561-BF1','562-BF1','421-BF1','422-BF2']){
+ const positions=[{side:'Utara',compartment:equipmentCode.startsWith('42')?15:12,column:1,row:17},{side:'Selatan',compartment:1,column:8,row:1}];const installedAt=new Date(Date.now()-1000).toISOString();
+ assert.equal((await post({action:'bags',equipmentCode,dataset:'demo',positions,installedAt,reason:'Smoke replacement',wo:code})).status,200);
+ const bags=await get('?equipment='+equipmentCode);assert.equal(bags.demoBags.filter(b=>b.wo===code).length,2);assert.equal(bags.bags.filter(b=>b.wo===code).length,0);
+ positions[0].compartment=equipmentCode.startsWith('42')?16:13;assert.equal((await post({action:'bags',equipmentCode,dataset:'demo',positions,installedAt,reason:'Invalid'})).status,400);
+}
+assert.equal((await fetch(base+'/api/data',{method:'POST',headers:{...headers,origin:'https://invalid.example'},body:JSON.stringify({action:'material'})})).status,403);
+const logout=await fetch(base+'/api/auth/logout',{method:'POST',headers:{origin:base,cookie},redirect:'manual'});assert.equal(logout.status,303);assert.equal(logout.headers.get('location'),base+'/login');
+console.log('PASS: authenticated pages, login/logout, unauthorized API, material registration, stock pack conversion, issue/history, concurrency protection, demo isolation and compartment validation across four equipment.');

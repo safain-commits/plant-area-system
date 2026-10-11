@@ -1,0 +1,1 @@
+ALTER TABLE `bag_changes` ADD `dataset` text DEFAULT 'actual' NOT NULL;

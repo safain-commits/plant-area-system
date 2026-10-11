@@ -1,0 +1,1 @@
+ALTER TABLE `bag_changes` ADD `installed_at` text;

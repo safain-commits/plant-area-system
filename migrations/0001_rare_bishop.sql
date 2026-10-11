@@ -1,0 +1,2 @@
+CREATE INDEX `idx_bag_changes_position` ON `bag_changes` (`equipment_code`,`side`,`compartment`,`column`,`row`);--> statement-breakpoint
+CREATE INDEX `idx_stock_moves_material` ON `stock_moves` (`material_id`);

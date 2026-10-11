@@ -1,0 +1,5 @@
+import Link from 'next/link';
+import { Grid3X3 } from 'lucide-react';
+import { ModuleCard } from '../../module-card';
+import { BAG_FILTERS } from './equipment-config';
+export default function BagFilters(){return <main className="workspace hub"><nav className="breadcrumbs" aria-label="Lokasi"><Link href="/">Dashboard</Link><span>/</span><Link href="/equipment-process">Equipment Process</Link><span>/</span><strong>Bag Filter</strong></nav><div className="heading"><div><p className="eyebrow">EQUIPMENT PROCESS</p><h1>Bag Filter</h1><p className="intro">Pilih equipment untuk melihat peta, mencatat penggantian, dan menelusuri riwayat tiap posisi.</p></div></div><div className="module-grid">{BAG_FILTERS.map(config=><ModuleCard key={config.code} href={`/equipment-process/bag-filter/${config.code.toLowerCase()}`} icon={<Grid3X3/>} eyebrow="AKTIF · DEMO TERSEDIA" title={config.code} description={`${config.compartments} kompartemen · ${config.perSide} Utara / ${config.perSide} Selatan · ${(config.compartments*136).toLocaleString('id-ID')} posisi bag.`}/>)}</div></main>}

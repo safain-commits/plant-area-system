@@ -1,0 +1,4 @@
+import Link from 'next/link';
+import { Layers3, Siren } from 'lucide-react';
+import { ModuleCard } from '../module-card';
+export default function EquipmentProcess(){return <main className="workspace hub"><nav className="breadcrumbs" aria-label="Lokasi"><Link href="/">Dashboard</Link><span>/</span><strong>Equipment Process</strong></nav><div className="heading"><div><p className="eyebrow">AREA KERJA</p><h1>Equipment Process</h1><p className="intro">Pilih aplikasi untuk equipment yang dipantau.</p></div></div><div className="module-grid"><ModuleCard href="/equipment-process/bag-filter" icon={<Layers3/>} title="Bag Filter" description="Peta posisi bag cloth, lifetime runhours, dan riwayat penggantian."/><ModuleCard icon={<Siren/>} title="Breakdown / Urgent Work Order" description="Alur pekerjaan mendesak akan dibahas berikutnya."/></div></main>}
